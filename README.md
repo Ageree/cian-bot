@@ -16,6 +16,11 @@ Sheets, and reports replies in a Telegram group.
 3. Run `python login_cian.py` from a machine with a graphical display to save
    your Cian session. Then run `python main.py` from the project directory.
 
+Set `LOG_LEVEL` in `.env` to control logging for the bot and interactive login.
+Supported values are `DEBUG`, `INFO` (default), `WARNING`, `ERROR`, and
+`CRITICAL`. Values are case-insensitive. An invalid value produces a warning
+and falls back to `INFO`.
+
 ## Local development checks
 
 With your virtual environment active, install the development dependencies and
