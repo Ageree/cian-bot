@@ -6,6 +6,7 @@
 import logging
 import os
 import re
+import time
 
 import requests
 
@@ -26,16 +27,49 @@ def _api(method: str, **params) -> dict | None:
         return None
 
     url = f"https://api.telegram.org/bot{token}/{method}"
-    try:
-        resp = requests.post(url, json=params, timeout=15)
-        data = resp.json()
-        if not data.get("ok"):
-            logger.error(f"Telegram API {method}: {data}")
+    max_attempts = 4 if method == "sendMessage" else 1
+    for attempt in range(max_attempts):
+        retry_after = 0
+        try:
+            response = requests.post(url, json=params, timeout=15)
+        except (requests.ConnectionError, requests.Timeout) as exc:
+            reason = type(exc).__name__
+            retryable = True
+        except requests.RequestException as exc:
+            reason = type(exc).__name__
+            retryable = False
+        else:
+            try:
+                data = response.json()
+            except ValueError:
+                data = {}
+            if not isinstance(data, dict):
+                data = {}
+            if response.ok and data.get("ok"):
+                return data.get("result")
+
+            status = response.status_code
+            error_code = data.get("error_code")
+            if not isinstance(error_code, int):
+                error_code = status
+            reason = f"HTTP {status}, API code {error_code}"
+            rate_limited = status == 429 or error_code == 429
+            retryable = rate_limited or 500 <= status < 600
+            parameters = data.get("parameters")
+            if rate_limited and isinstance(parameters, dict):
+                requested_delay = parameters.get("retry_after")
+                if isinstance(requested_delay, int) and requested_delay > 0:
+                    retry_after = requested_delay
+
+        if not retryable or attempt == max_attempts - 1:
+            logger.error("Telegram API %s: %s", method, reason)
             return None
-        return data.get("result")
-    except Exception as e:
-        logger.error(f"Telegram API {method}: {e}")
-        return None
+
+        delay = max(2 ** attempt, retry_after)
+        logger.warning("Telegram API %s: %s, повтор через %s сек.", method, reason, delay)
+        time.sleep(delay)
+
+    return None
 
 
 def _extract_offer_id(url: str) -> str:

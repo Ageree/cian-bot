@@ -19,6 +19,23 @@ Sheets, and reports replies in a Telegram group.
 For local checks, install `requirements-dev.txt`, then run `ruff check .` and
 `python -m pytest`. The tests use mocks for external services.
 
+## Run with Docker Compose
+
+With Docker Compose v2, fill in `.env` and make sure `credentials.json` and
+`cian_session.json` are available. The quick start above explains how to create
+both files, including the interactive Cian login. From the project directory run:
+
+```sh
+docker compose up --build
+```
+
+Compose mounts the credentials, session and message templates read-only. The
+`bot-state` volume stores the Chromium profile, reply history and application log.
+Set `GOOGLE_CREDENTIALS_FILE` or `CIAN_SESSION_FILE` in `.env` to use a different
+host file. The container runs as UID/GID 1000 by default. Set `BOT_UID` and
+`BOT_GID` before the first build if your files are readable only by a different
+non-root user.
+
 ## Как работает
 
 1. Ты закидываешь ссылки на объявления Циан в Google Sheets

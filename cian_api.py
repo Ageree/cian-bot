@@ -6,8 +6,10 @@ import json
 import logging
 import os
 from pathlib import Path
+from typing import TypedDict, cast
 
 import requests
+from playwright.sync_api import BrowserContext, Playwright
 
 logger = logging.getLogger(__name__)
 
@@ -18,15 +20,41 @@ API_BASE = "https://api.cian.ru/chats/v1"
 _NOTIFIED_FILE = Path("notified_chats.json")
 
 
-def _load_notified() -> dict:
+class SendResult(TypedDict):
+    success: bool
+    error: str | None
+
+
+class Reply(TypedDict):
+    offer_url: str
+    reply_text: str
+    sender: str
+
+
+class ChatPreview(TypedDict):
+    name: str
+    preview: str
+    unread: int
+
+
+class NotifiedReply(TypedDict):
+    offer_url: str
+    reply_text: str
+
+
+# Older files store the last preview as a string.
+NotifiedChats = dict[str, str | NotifiedReply]
+
+
+def _load_notified() -> NotifiedChats:
     """Загружает словарь {sender_name: last_preview} уже уведомлённых."""
     if _NOTIFIED_FILE.exists():
         with open(_NOTIFIED_FILE) as f:
-            return json.load(f)
+            return cast(NotifiedChats, json.load(f))
     return {}
 
 
-def _save_notified(data: dict):
+def _save_notified(data: NotifiedChats) -> None:
     """Сохраняет словарь уведомлённых."""
     with open(_NOTIFIED_FILE, "w") as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
@@ -72,7 +100,7 @@ def _extract_offer_id(offer_url: str) -> str:
     return match.group(1) if match else ""
 
 
-def send_message(offer_url: str, message_text: str) -> dict:
+def send_message(offer_url: str, message_text: str) -> SendResult:
     """
     Отправляет сообщение собственнику через API Циан.
 
@@ -82,7 +110,7 @@ def send_message(offer_url: str, message_text: str) -> dict:
     Возвращает:
         {"success": True/False, "error": str|None}
     """
-    result = {"success": False, "error": None}
+    result: SendResult = {"success": False, "error": None}
 
     offer_id_str = _extract_offer_id(offer_url)
     if not offer_id_str:
@@ -123,12 +151,12 @@ def send_message(offer_url: str, message_text: str) -> dict:
     return result
 
 
-def _send_first_via_hint(session: requests.Session, offer_id: int, message_text: str) -> dict:
+def _send_first_via_hint(session: requests.Session, offer_id: int, message_text: str) -> SendResult:
     """
     Отправляет первое сообщение с analyticsKey для обхода капчи.
     После создания чата отправляет кастомный текст.
     """
-    result = {"success": False, "error": None}
+    result: SendResult = {"success": False, "error": None}
 
     # Шаг 1: создаём чат через hint-сообщение
     hint_payload = {
@@ -175,7 +203,7 @@ def _send_first_via_hint(session: requests.Session, offer_id: int, message_text:
     return result
 
 
-def _get_browser_context():
+def _get_browser_context() -> tuple[Playwright, BrowserContext]:
     """Создаёт Playwright browser context с cookies и stealth."""
     from pathlib import Path
     from playwright.sync_api import sync_playwright
@@ -214,7 +242,7 @@ def _get_browser_context():
     return p, context
 
 
-def check_replies() -> list[dict]:
+def check_replies() -> list[Reply]:
     """
     Проверяет непрочитанные сообщения через браузер.
     Открывает /dialogs/, парсит список чатов, находит непрочитанные,
@@ -226,7 +254,7 @@ def check_replies() -> list[dict]:
     import re
     import time
 
-    replies = []
+    replies: list[Reply] = []
 
     try:
         p, context = _get_browser_context()
@@ -244,7 +272,7 @@ def check_replies() -> list[dict]:
         time.sleep(5)
 
         # Парсим список чатов — ищем span с username, поднимаемся к родителю
-        chats_data = page.evaluate("""() => {
+        chats_data: list[ChatPreview] = page.evaluate("""() => {
             const chats = [];
             const usernames = document.querySelectorAll('span[class*="username"]');
 
@@ -362,7 +390,7 @@ def check_replies() -> list[dict]:
                 reply_text = "\n".join(unread_msgs) if unread_msgs else chat["preview"]
 
                 # Дедупликация: сравниваем с реальным текстом ответа
-                prev_data = notified.get(sender_name, {})
+                prev_data = notified.get(sender_name, "")
                 prev_reply = prev_data if isinstance(prev_data, str) else prev_data.get("reply_text", "")
                 if reply_text and reply_text == prev_reply:
                     logger.debug(f"Пропускаю {sender_name} — тот же текст ответа")

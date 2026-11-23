@@ -22,3 +22,29 @@ jobs:
       - run: ruff check .
       - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
         run: python -m pytest
+      - if: ${{ !cancelled() && steps.install.outcome == 'success' }}
+        run: python -m mypy
+
+  docker-smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and start Chromium with Docker Compose
+        run: |
+          cp .env.example .env
+          touch credentials.json cian_session.json
+          docker compose build
+          docker compose run --rm -T bot python - <<'PY'
+          import os
+          from pathlib import Path
+          from playwright.sync_api import sync_playwright
+
+          for name in ("GOOGLE_CREDENTIALS_FILE", "CIAN_SESSION_FILE"):
+              assert Path(os.environ[name]).is_file()
+          assert Path("messages.txt").is_file()
+          Path("smoke-test.txt").write_text("ok")
+          with sync_playwright() as playwright:
+              browser = playwright.chromium.launch(headless=False)
+              assert browser.new_page().url == "about:blank"
+              browser.close()
+          PY
