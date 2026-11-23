@@ -1,0 +1,36 @@
+services:
+  bot:
+    build:
+      context: .
+      args:
+        BOT_UID: ${BOT_UID:-1000}
+        BOT_GID: ${BOT_GID:-1000}
+    env_file: .env
+    environment:
+      GOOGLE_CREDENTIALS_FILE: /data/credentials.json
+      CIAN_SESSION_FILE: /data/cian_session.json
+    init: true
+    shm_size: 512m
+    volumes:
+      - bot-state:/data
+      - type: bind
+        source: ${GOOGLE_CREDENTIALS_FILE:-./credentials.json}
+        target: /data/credentials.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${CIAN_SESSION_FILE:-./cian_session.json}
+        target: /data/cian_session.json
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./messages.txt
+        target: /data/messages.txt
+        read_only: true
+        bind:
+          create_host_path: false
+
+volumes:
+  bot-state:

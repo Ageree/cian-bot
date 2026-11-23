@@ -5,6 +5,7 @@
 import logging
 import os
 from datetime import datetime, timedelta
+from typing import TypedDict
 
 import gspread
 from google.oauth2.service_account import Credentials
@@ -26,6 +27,13 @@ SCOPES = [
 ]
 
 
+class PendingSend(TypedDict):
+    row: int
+    url: str
+    sent_count: int
+    topic_id: int | None
+
+
 def _get_client() -> gspread.Client:
     """Создаёт авторизованный gspread клиент."""
     creds_file = os.getenv("GOOGLE_CREDENTIALS_FILE", "credentials.json")
@@ -36,12 +44,12 @@ def _get_client() -> gspread.Client:
 def _get_sheet() -> gspread.Worksheet:
     """Возвращает первый лист таблицы."""
     client = _get_client()
-    sheet_id = os.getenv("GOOGLE_SHEET_ID")
+    sheet_id = os.environ["GOOGLE_SHEET_ID"]
     spreadsheet = client.open_by_key(sheet_id)
     return spreadsheet.sheet1
 
 
-def get_pending_sends(days_between: int = 3) -> list[dict]:
+def get_pending_sends(days_between: int = 3) -> list[PendingSend]:
     """
     Получает список объявлений, которым пора отправить сообщение.
 
@@ -51,7 +59,7 @@ def get_pending_sends(days_between: int = 3) -> list[dict]:
     sheet = _get_sheet()
     all_rows = sheet.get_all_values()
     today = datetime.now().strftime("%Y-%m-%d")
-    pending = []
+    pending: list[PendingSend] = []
 
     for i, row in enumerate(all_rows):
         if i == 0:  # Пропускаем заголовок
@@ -104,7 +112,7 @@ def get_pending_sends(days_between: int = 3) -> list[dict]:
     return pending
 
 
-def mark_sent(row: int, new_sent_count: int, days_between: int = 3):
+def mark_sent(row: int, new_sent_count: int, days_between: int = 3) -> None:
     """Отмечает успешную отправку сообщения."""
     sheet = _get_sheet()
     next_date = (datetime.now() + timedelta(days=days_between)).strftime("%Y-%m-%d")
@@ -119,7 +127,7 @@ def mark_sent(row: int, new_sent_count: int, days_between: int = 3):
         logger.info(f"Строка {row}: все 20 сообщений отправлены, статус → done")
 
 
-def mark_replied(offer_url: str, reply_text: str):
+def mark_replied(offer_url: str, reply_text: str) -> bool:
     """Ставит статус 'replied' для объявления."""
     sheet = _get_sheet()
     all_rows = sheet.get_all_values()
@@ -144,7 +152,7 @@ def mark_replied(offer_url: str, reply_text: str):
 
 def _urls_match(url1: str, url2: str) -> bool:
     """Нечёткое сравнение URL Циана."""
-    def normalize(u):
+    def normalize(u: str) -> str:
         return u.replace("https://", "").replace("http://", "").replace("www.", "").rstrip("/")
     return normalize(url1) == normalize(url2)
 
@@ -179,7 +187,7 @@ def get_topic_id(offer_url: str) -> int | None:
     return None
 
 
-def get_stats() -> dict:
+def get_stats() -> dict[str, int]:
     """Статистика по таблице."""
     sheet = _get_sheet()
     all_rows = sheet.get_all_values()
