@@ -19,7 +19,7 @@ RUN groupadd --gid "$BOT_GID" bot \
     && useradd --uid "$BOT_UID" --gid "$BOT_GID" --create-home bot \
     && install -d -o bot -g bot /data
 
-COPY main.py sheets.py cian_api.py cian_browser.py telegram_bot.py telegram_notify.py ./
+COPY main.py sheets.py cian_api.py cian_browser.py telegram_bot.py telegram_notify.py logging_config.py ./
 USER bot
 WORKDIR /data
 

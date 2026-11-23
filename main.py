@@ -16,6 +16,8 @@ from pathlib import Path
 from apscheduler.schedulers.background import BackgroundScheduler
 from dotenv import load_dotenv
 
+from logging_config import configure_logging
+
 # Загружаем .env до импорта модулей
 load_dotenv()
 
@@ -240,14 +242,7 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(
-        level=logging.INFO,
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        handlers=[
-            logging.StreamHandler(sys.stdout),
-            logging.FileHandler("cian_bot.log", encoding="utf-8"),
-        ],
-    )
+    configure_logging("cian_bot.log")
     # Если передан аргумент --test-send, отправляем одно сообщение для теста
     if len(sys.argv) > 1 and sys.argv[1] == "--test-send":
         validate_config()
