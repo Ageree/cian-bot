@@ -16,8 +16,27 @@ Sheets, and reports replies in a Telegram group.
 3. Run `python login_cian.py` from a machine with a graphical display to save
    your Cian session. Then run `python main.py` from the project directory.
 
-For local checks, install `requirements-dev.txt`, then run `ruff check .` and
-`python -m pytest`. The tests use mocks for external services.
+Set `LOG_LEVEL` in `.env` to control logging for the bot and interactive login.
+Supported values are `DEBUG`, `INFO` (default), `WARNING`, `ERROR`, and
+`CRITICAL`. Values are case-insensitive. An invalid value produces a warning
+and falls back to `INFO`.
+
+## Local development checks
+
+With your virtual environment active, install the development dependencies and
+register the Git hook.
+
+```sh
+python -m pip install -r requirements-dev.txt
+pre-commit install
+pre-commit run --all-files
+```
+
+Keep the virtual environment active when committing so the Ruff and mypy hooks
+use the same dependencies as CI. Both checks use the settings in
+`pyproject.toml`.
+
+Run tests with `python -m pytest`. The tests use mocks for external services.
 
 ## Run with Docker Compose
 
