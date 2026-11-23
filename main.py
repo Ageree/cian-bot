@@ -214,7 +214,7 @@ def main():
 
     logger.info(f"📅 Отправка: каждый день в {send_hour}:{send_minute:02d} МСК")
     logger.info(f"📬 Проверка ответов: каждые {check_interval} мин")
-    logger.info(f"📊 Сводка: каждый день в 20:00 МСК")
+    logger.info("📊 Сводка: каждый день в 20:00 МСК")
     logger.info("")
     logger.info("Жду расписания... (Ctrl+C для остановки)")
 
