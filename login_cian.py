@@ -3,27 +3,26 @@
 Запусти один раз — откроется браузер, залогинься вручную.
 Сессия сохранится в файл и будет использоваться ботом.
 """
+import json
+import logging
 import os
 from pathlib import Path
-from playwright.sync_api import sync_playwright
+
 from dotenv import load_dotenv
+from playwright.sync_api import sync_playwright
+
+from logging_config import configure_logging
 
 load_dotenv()
+
+logger = logging.getLogger(__name__)
 
 SESSION_FILE = os.getenv("CIAN_SESSION_FILE", "cian_session.json")
 SESSION_DIR = Path("cian_storage")
 
 
-def main():
-    print("=" * 50)
-    print("🔐 Логин в Циан")
-    print("=" * 50)
-    print()
-    print("Сейчас откроется браузер.")
-    print("1. Залогинься в Циан (телефон + SMS)")
-    print("2. Убедись что ты на главной странице залогиненным")
-    print("3. Закрой браузер или нажми Enter в терминале")
-    print()
+def main() -> None:
+    logger.info("Логин в Циан: открываю браузер")
 
     with sync_playwright() as p:
         # Используем persistent context — он сохраняет всё: cookies, localStorage, sessionStorage
@@ -38,9 +37,10 @@ def main():
         page = browser_context.new_page()
         page.goto("https://www.cian.ru/authenticate/", wait_until="domcontentloaded")
 
-        print()
-        print("⏳ Браузер открыт. Залогинься и нажми Enter здесь...")
-        input()
+        input(
+            "Войди в Циан в открытом браузере (телефон + SMS).\n"
+            "Убедись, что ты вошёл в аккаунт, и нажми Enter здесь... "
+        )
 
         # Проверяем что залогинились — пробуем зайти в диалоги
         page.goto("https://www.cian.ru/dialogs/", wait_until="domcontentloaded")
@@ -48,18 +48,17 @@ def main():
 
         # Сохраняем cookies отдельно для надёжности
         cookies = browser_context.cookies()
-        import json
         with open(SESSION_FILE, "w") as f:
             json.dump(cookies, f, ensure_ascii=False, indent=2)
 
-        print(f"✅ Сессия сохранена в {SESSION_DIR}/ и {SESSION_FILE}")
-        print(f"   Cookies: {len(cookies)} шт.")
+        logger.info("Сессия сохранена в %s/ и %s", SESSION_DIR, SESSION_FILE)
+        logger.info("Cookies: %s шт.", len(cookies))
 
         browser_context.close()
 
-    print()
-    print("Готово! Теперь можешь запускать main.py")
+    logger.info("Готово! Теперь можешь запускать main.py")
 
 
 if __name__ == "__main__":
+    configure_logging()
     main()
