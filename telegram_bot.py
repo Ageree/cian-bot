@@ -69,7 +69,7 @@ def _process_update(update: dict):
     if success:
         telegram_notify.send_to_topic(topic_id, f"Отправлено на Циан от {sender_name}")
     else:
-        telegram_notify.send_to_topic(topic_id, f"Ошибка отправки на Циан")
+        telegram_notify.send_to_topic(topic_id, "Ошибка отправки на Циан")
 
 
 def run_polling():

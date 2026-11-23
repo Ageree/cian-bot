@@ -142,18 +142,18 @@ def _solve_captcha_2captcha(page: Page) -> bool:
         logger.info(f"2captcha решил капчу, токен: {token[:30]}...")
 
         # Вставляем токен в форму
-        page.evaluate(f'''(token) => {{
+        page.evaluate('''(token) => {
             // Ищем hidden input для ответа капчи
             const inputs = document.querySelectorAll('input[name*="captcha"], input[name*="smart-token"], textarea[name*="captcha"]');
-            inputs.forEach(i => {{ i.value = token; }});
+            inputs.forEach(i => { i.value = token; });
             // Пробуем callback
-            if (window.smartCaptcha) {{
+            if (window.smartCaptcha) {
                 window.smartCaptcha.execute();
-            }}
+            }
             // Пробуем сабмит формы
             const form = document.querySelector('form');
             if (form) form.submit();
-        }}''', token)
+        }''', token)
 
         _human_delay(3, 5)
         return not _has_captcha(page)
@@ -195,7 +195,7 @@ def _handle_captcha(page: Page) -> bool:
                         if not _has_captcha(page):
                             logger.info("Капча пройдена через iframe checkbox")
                             return True
-                except:
+                except Exception:
                     continue
 
             # Перезагрузка
@@ -319,7 +319,7 @@ def send_message(offer_url: str, message_text: str) -> dict:
                         textarea = el
                         logger.info(f"Нашёл поле ввода: {sel}")
                         break
-                except:
+                except Exception:
                     continue
 
             if not textarea:
@@ -354,7 +354,7 @@ def send_message(offer_url: str, message_text: str) -> dict:
             logger.error(f"Ошибка отправки: {e}")
             try:
                 page.screenshot(path=f"debug_error_{int(time.time())}.png")
-            except:
+            except Exception:
                 pass
 
         finally:
@@ -435,7 +435,7 @@ def check_replies() -> list[dict]:
                 cookies = context.cookies()
                 with open(SESSION_FILE, "w") as f:
                     json.dump(cookies, f, ensure_ascii=False, indent=2)
-            except:
+            except Exception:
                 pass
             context.close()
 

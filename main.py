@@ -19,21 +19,21 @@ from dotenv import load_dotenv
 # Загружаем .env до импорта модулей
 load_dotenv()
 
-import sheets
-import cian_api
-import telegram_notify
-import telegram_bot
+import cian_api  # noqa: E402
+import sheets  # noqa: E402
+import telegram_bot  # noqa: E402
+import telegram_notify  # noqa: E402
 
-# Настройка логирования
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-    handlers=[
-        logging.StreamHandler(sys.stdout),
-        logging.FileHandler("cian_bot.log", encoding="utf-8"),
-    ],
-)
 logger = logging.getLogger(__name__)
+
+REQUIRED_ENV = ("GOOGLE_SHEET_ID", "TELEGRAM_BOT_TOKEN", "TELEGRAM_GROUP_ID")
+
+
+def validate_config():
+    missing = [name for name in REQUIRED_ENV if not os.getenv(name, "").strip()]
+    if missing:
+        logger.error("Задайте обязательные переменные в .env: %s", ", ".join(missing))
+        raise SystemExit(1)
 
 
 def load_messages() -> list[str]:
@@ -160,6 +160,8 @@ def task_daily_stats():
 
 
 def main():
+    validate_config()
+
     logger.info("=" * 50)
     logger.info("🏠 Cian Auto-Messenger запущен")
     logger.info("=" * 50)
@@ -212,7 +214,7 @@ def main():
 
     logger.info(f"📅 Отправка: каждый день в {send_hour}:{send_minute:02d} МСК")
     logger.info(f"📬 Проверка ответов: каждые {check_interval} мин")
-    logger.info(f"📊 Сводка: каждый день в 20:00 МСК")
+    logger.info("📊 Сводка: каждый день в 20:00 МСК")
     logger.info("")
     logger.info("Жду расписания... (Ctrl+C для остановки)")
 
@@ -238,14 +240,25 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        handlers=[
+            logging.StreamHandler(sys.stdout),
+            logging.FileHandler("cian_bot.log", encoding="utf-8"),
+        ],
+    )
     # Если передан аргумент --test-send, отправляем одно сообщение для теста
     if len(sys.argv) > 1 and sys.argv[1] == "--test-send":
+        validate_config()
         logger.info("🧪 Тестовый режим: одна отправка")
         task_send_messages()
     elif len(sys.argv) > 1 and sys.argv[1] == "--test-replies":
+        validate_config()
         logger.info("🧪 Тестовый режим: проверка ответов")
         task_check_replies()
     elif len(sys.argv) > 1 and sys.argv[1] == "--stats":
+        validate_config()
         task_daily_stats()
     else:
         main()

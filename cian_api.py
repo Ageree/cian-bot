@@ -177,7 +177,6 @@ def _send_first_via_hint(session: requests.Session, offer_id: int, message_text:
 
 def _get_browser_context():
     """Создаёт Playwright browser context с cookies и stealth."""
-    import time
     from pathlib import Path
     from playwright.sync_api import sync_playwright
     from playwright_stealth import Stealth
@@ -332,7 +331,7 @@ def check_replies() -> list[dict]:
 
                 # Читаем сообщения — ищем после "Непрочитанные сообщения"
                 all_text = page.evaluate("document.body.innerText")
-                lines = [l.strip() for l in all_text.split("\n") if l.strip()]
+                lines = [line.strip() for line in all_text.split("\n") if line.strip()]
 
                 # UI-лейблы Циана, которые не являются сообщениями
                 ui_labels = {
@@ -394,7 +393,7 @@ def check_replies() -> list[dict]:
         try:
             context.close()
             p.stop()
-        except:
+        except Exception:
             pass
 
     return replies

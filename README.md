@@ -2,6 +2,23 @@
 
 Автоматическая рассылка сообщений собственникам на Циан с Google Sheets интеграцией.
 
+## Quick start (English)
+
+Cian Auto-Messenger sends scheduled follow-ups on Cian, tracks listings in Google
+Sheets, and reports replies in a Telegram group.
+
+1. With Python 3.10 or newer, create and activate a virtual environment. Run
+   `python -m pip install -r requirements.txt` and `python -m playwright install chromium`.
+2. Copy `.env.example` to `.env` and set `GOOGLE_SHEET_ID`, `TELEGRAM_BOT_TOKEN`, and
+   `TELEGRAM_GROUP_ID`. Put your Google service-account key in `credentials.json`,
+   share the spreadsheet with the service account as an editor, and add the bot
+   to a Telegram group with Topics enabled and permission to manage topics.
+3. Run `python login_cian.py` from a machine with a graphical display to save
+   your Cian session. Then run `python main.py` from the project directory.
+
+For local checks, install `requirements-dev.txt`, then run `ruff check .` and
+`python -m pytest`. The tests use mocks for external services.
+
 ## Как работает
 
 1. Ты закидываешь ссылки на объявления Циан в Google Sheets
@@ -51,9 +68,9 @@ python main.py
 ## Настройка Telegram бота
 
 1. Напиши @BotFather → /newbot → получи токен
-2. Напиши своему боту любое сообщение
+2. Добавь бота в группу и отправь сообщение в этой группе
 3. Открой `https://api.telegram.org/bot<TOKEN>/getUpdates` → найди chat_id
-4. Впиши оба значения в `.env`
+4. Впиши токен в `TELEGRAM_BOT_TOKEN`, а ID группы — в `TELEGRAM_GROUP_ID` в `.env`
 
 ## Структура Google Sheets
 
